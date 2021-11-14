@@ -17,36 +17,16 @@ namespace todo_console_app.Models
         {
         }
 
-        public virtual DbSet<Todo> Todos { get; set; }
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
                 optionsBuilder.UseSqlite("Data Source=Todos.db");
             }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Todo>(entity =>
-            {
-                entity.ToTable("Todo");
-
-                entity.Property(e => e.Id)
-                    .ValueGeneratedNever()
-                    .HasColumnName("ID");
-
-                entity.Property(e => e.Checked).HasDefaultValueSql("0");
-
-                entity.Property(e => e.Content).IsRequired();
-
-                entity.Property(e => e.Data).IsRequired();
-
-                entity.Property(e => e.Title).IsRequired();
-            });
-
             OnModelCreatingPartial(modelBuilder);
         }
 

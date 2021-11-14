@@ -1,16 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
-#nullable disable
-
-namespace todo_console_app.Models
+namespace Todo 
 {
-    public partial class Todo
+    public partial class Todo  
     {
-        public long Id { get; set; }
+        [Key]
+        public long ID { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
-        public string Data { get; set; }
-        public long? Checked { get; set; }
+        public string CreationDate { get; set; }
+        public int Checked { get; set; } = 0;
+
+        public override string ToString()
+        {
+            bool isChecked = Checked == 0 ? false : true;
+            return $"{ID} - {Title} - {isChecked}\n\r{Content}\n\r{CreationDate}";
+        }
     }
 }
