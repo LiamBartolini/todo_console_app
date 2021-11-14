@@ -17,6 +17,8 @@ namespace todo_console_app.Models
         {
         }
 
+        public virtual DbSet<Todo> Db { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -27,6 +29,23 @@ namespace todo_console_app.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Todo>(entity => 
+            {
+                entity.ToTable("Todo");
+
+                entity.Property(e => e.ID)
+                    .ValueGeneratedNever()
+                    .HasColumnName("ID");
+
+                entity.Property(e => e.Checked).HasDefaultValueSql("0");
+
+                entity.Property(e => e.Content).IsRequired();
+
+                entity.Property(e => e.CreationDate).IsRequired();
+
+                entity.Property(e => e.Title).IsRequired();
+            });
+
             OnModelCreatingPartial(modelBuilder);
         }
 
