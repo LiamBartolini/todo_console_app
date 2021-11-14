@@ -14,7 +14,7 @@ namespace todo_console_app.Models
         public override string ToString()
         {
             bool isChecked = Checked == 0 ? false : true;
-            return $"{ID} - {Title} - {isChecked}\n\r{Content}\n\r{CreationDate}";
+            return $"{ID} - {Title} - {isChecked}\n\r{Content}\n\r{CreationDate}\n";
         }
     }
 }
