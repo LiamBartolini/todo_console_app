@@ -34,7 +34,7 @@ namespace todo_console_app.Models
                 entity.ToTable("Todo");
 
                 entity.Property(e => e.ID)
-                    .ValueGeneratedNever()
+                    .ValueGeneratedOnAdd()
                     .HasColumnName("ID");
 
                 entity.Property(e => e.Checked).HasDefaultValueSql("0");

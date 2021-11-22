@@ -3,8 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# publish dir
+# publish dir - db
 [Pp]ublish/
+Todos.db
 
 # User-specific files
 *.rsuser
