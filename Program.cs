@@ -37,7 +37,14 @@ namespace todo_console_app
                         Console.Write("Insert content: ");
                         string strContent = Console.ReadLine();
                         
-                        AddTodo(new Todo{ ID = GetID(), Title = strTitle, Content = strContent, CreationDate = $"{DateTime.Today:dd/MM}" });
+                        AddTodo(
+                            new Todo {
+                                Title = strTitle,
+                                Content = strContent,
+                                CreationDate = $"{DateTime.Today:dd/MM}"
+                            }
+                        );
+
                         break;
 
                     case ConsoleKey.D2:
@@ -45,14 +52,14 @@ namespace todo_console_app
                                 where todo.Checked == 0 // if checked == 0 is like unchecked; otherwise (value == 1) is checked 
                                 select todo; 
 
-                        PrintTodos(query);
+                        PrintFormattedToDo(query);
                         break;
 
                     case ConsoleKey.D3:
-                        query = from todo in db.Db
-                                select todo; 
+                        query = (from todo in db.Db
+                                select todo).ToList<Todo>(); 
 
-                        PrintTodos(query);
+                        PrintFormattedToDo(query);
                         break;
 
                     case ConsoleKey.D4:
@@ -60,7 +67,7 @@ namespace todo_console_app
                                 where todo.Checked == 1
                                 select todo;
 
-                        PrintTodos(query);    
+                        PrintFormattedToDo(query);    
                         break;
 
                     case ConsoleKey.D5:
@@ -76,6 +83,19 @@ namespace todo_console_app
 
                         RemoveTodo(long.Parse(strId));                        
                         break;
+                    
+                    case ConsoleKey.D7:
+                        Console.Write("Insert ID: ");
+                        strId = Console.ReadLine();
+                        
+                        Console.Write("Insert content (it can be empty): ");
+                        strContent = Console.ReadLine();
+                        
+                        Console.Write("Insert title (it can be empty): ");
+                        strTitle = Console.ReadLine();
+                        
+                        ModifyTodo(long.Parse(strId), strContent, strTitle);
+                    break;
 
                     default:
                         Environment.Exit(-1);
@@ -110,10 +130,15 @@ namespace todo_console_app
             db.SaveChanges();
         }
 
-        static void PrintTodos(IEnumerable<Todo> todos)
+        static void ModifyTodo(long idTodo, string content = "", string title = "")
         {
-            foreach (Todo todo in todos)
-                Console.WriteLine(todo);
+            Todos db = new();
+            Todo todo = (from record in db.Db
+                        where record.ID == idTodo
+                        select record).First();   
+            todo.Content = content != "" ? content : todo.Content;
+            todo.Title = title != "" ? title : todo.Title;
+            db.SaveChanges();
         }
 
         static void PrintMenu() 
@@ -127,6 +152,7 @@ namespace todo_console_app
             menu.AppendLine("[4] - Visualize all checked Todo");
             menu.AppendLine("[5] - Check Todo");
             menu.AppendLine("[6] - Remove Todo");
+            menu.AppendLine("[7] - Modify Todo");
             Console.WriteLine(menu.ToString());
         }
 
@@ -136,21 +162,32 @@ namespace todo_console_app
             db.Db.Add(todo);
             db.SaveChanges();
         }
-        
-        static long GetID()
-        {
-            Todos db = new();
-            var ids = from id in db.Db
-                      select id.ID;
-
-            return ids.Max() + 1;
-        }
 
         static void PrintTitle(string title) 
         {
             (int, int) cursorPosition = Console.GetCursorPosition();
             Console.SetCursorPosition(Console.WindowWidth / 2, cursorPosition.Item2);
             Console.WriteLine(title);
+        }
+
+        static void PrintFormattedToDo(Todo todo)
+        {
+            ConsoleResponsiveTable.PrintSepartorLine();
+            ConsoleResponsiveTable.PrintRow("ID", "Title", "Content", "Checked");
+            ConsoleResponsiveTable.PrintSepartorLine();
+            ConsoleResponsiveTable.PrintRow(todo.ID.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
+        }
+
+        static void PrintFormattedToDo(IEnumerable<Todo> todos)
+        {
+            ConsoleResponsiveTable.PrintSepartorLine();
+            ConsoleResponsiveTable.PrintRow("ID", "Title", "Content", "Checked");
+            foreach (Todo todo in todos)
+            {
+                ConsoleResponsiveTable.PrintSepartorLine();
+                ConsoleResponsiveTable.PrintRow(todo.ID.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
+            }
+            ConsoleResponsiveTable.PrintSepartorLine();
         }
     }
 }
