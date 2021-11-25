@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pastel;
+using System;
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
@@ -53,6 +54,13 @@ namespace todo_console_app
                                 select todo; 
 
                         PrintFormattedToDo(query);
+
+                        Console.Write("Enter the id for visualize all the content: ");
+                        strId = Console.ReadLine();
+
+                        try { VisualizeAllContent(long.Parse(strId)); }
+                        catch (Exception ex) { PrintError(ex.Message); }
+
                         break;
 
                     case ConsoleKey.D3:
@@ -74,14 +82,18 @@ namespace todo_console_app
                         Console.Write("Insert ID: ");
                         strId = Console.ReadLine();
                         
-                        CheckTodo(long.Parse(strId));
+                        try { CheckTodo(long.Parse(strId)); }
+                        catch (Exception ex) { PrintError(ex.Message); }
+                        
                         break;
 
                     case ConsoleKey.D6:
                         Console.Write("Insert ID: ");
                         strId = Console.ReadLine();
+                        
+                        try { RemoveTodo(long.Parse(strId)); }
+                        catch (Exception ex) { PrintError(ex.Message); }
 
-                        RemoveTodo(long.Parse(strId));                        
                         break;
                     
                     case ConsoleKey.D7:
@@ -94,7 +106,8 @@ namespace todo_console_app
                         Console.Write("Insert title (it can be empty): ");
                         strTitle = Console.ReadLine();
                         
-                        ModifyTodo(long.Parse(strId), strContent, strTitle);
+                        try { ModifyTodo(long.Parse(strId), strContent, strTitle); }
+                        catch (Exception ex) { PrintError(ex.Message); }
                     break;
 
                     default:
@@ -102,6 +115,21 @@ namespace todo_console_app
                         break;
                 }
             } while (true);
+        }
+
+        static void PrintError(string err)
+        {
+            Console.WriteLine(err.Pastel("#FF0000"));
+        }
+
+        static void VisualizeAllContent(long idTodo)
+        {
+            Todos db = new();
+            var todo = (from record in db.Db
+                        where record.ID == idTodo
+                        select record).First();
+
+            Console.Write($"Content: `{todo.Content}`\n");
         }
 
         static void RemoveTodo(long idTodo)
