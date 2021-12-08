@@ -18,6 +18,7 @@ namespace todo_console_app.Models
         }
 
         public virtual DbSet<Todo> Db { get; set; }
+        public virtual DbSet<User> Users { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -29,21 +30,37 @@ namespace todo_console_app.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Todo>(entity => 
+            modelBuilder.Entity<Todo>(entity =>
             {
                 entity.ToTable("Todo");
 
-                entity.Property(e => e.ID)
-                    .ValueGeneratedOnAdd()
-                    .HasColumnName("ID");
-
-                entity.Property(e => e.Checked).HasDefaultValueSql("0");
+                entity.Property(e => e.Id).HasColumnName("ID");
 
                 entity.Property(e => e.Content).IsRequired();
 
                 entity.Property(e => e.CreationDate).IsRequired();
 
+                entity.Property(e => e.FkUserId).HasColumnName("FK_UserID");
+
                 entity.Property(e => e.Title).IsRequired();
+
+                entity.HasOne(d => d.FkUser)
+                    .WithMany(p => p.Todos)
+                    .HasForeignKey(d => d.FkUserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
+            });
+
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("User");
+
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.Email).IsRequired();
+
+                entity.Property(e => e.Password).IsRequired();
+
+                entity.Property(e => e.Username).IsRequired();
             });
 
             OnModelCreatingPartial(modelBuilder);

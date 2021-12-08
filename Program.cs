@@ -9,13 +9,36 @@ namespace todo_console_app
 {
     class Program
     {
-        static void Main(string[] args)
+        static User user = null;
+
+        static void Main()
         {
             PrintTitle("Todo-App");
             ConsoleKey keyPressed;
             Todos db = new();
             IEnumerable<Todo> query;
             string strId;
+
+            Console.WriteLine("Are you signed in? [y/n]");
+            switch (Console.ReadKey(true).Key)
+            {
+                case ConsoleKey.Y:
+                    Login();
+                    break;
+
+                case ConsoleKey.N:
+                default:
+                    SignIn();
+                    Login();
+                    break;
+            }
+
+            if (user == null) 
+            {
+                PrintError("User not logged in!");
+                Environment.Exit(0);
+            }
+
             do
             {
                 PrintMenu();
@@ -42,37 +65,33 @@ namespace todo_console_app
                             new Todo {
                                 Title = strTitle,
                                 Content = strContent,
-                                CreationDate = $"{DateTime.Today:dd/MM}"
+                                CreationDate = $"{DateTime.Today:dd/MM}",
+                                FkUserId = user.Id
                             }
                         );
-
                         break;
 
                     case ConsoleKey.D2:
                         query = from todo in db.Db
-                                where todo.Checked == 0 // if checked == 0 is like unchecked; otherwise (value == 1) is checked 
+                                where todo.Checked == 0 && todo.FkUserId == user.Id // if checked == 0 is like unchecked; otherwise (value == 1) is checked 
                                 select todo; 
 
                         PrintFormattedToDo(query);
-
-                        Console.Write("Enter the id for visualize all the content: ");
-                        strId = Console.ReadLine();
-
-                        try { VisualizeAllContent(long.Parse(strId)); }
-                        catch (Exception ex) { PrintError(ex.Message); }
-
+                        VisualizeAllContent();
                         break;
 
                     case ConsoleKey.D3:
                         query = (from todo in db.Db
+                                where todo.FkUserId == user.Id
                                 select todo).ToList<Todo>(); 
 
                         PrintFormattedToDo(query);
+                        VisualizeAllContent();
                         break;
 
                     case ConsoleKey.D4:
                         query = from todo in db.Db
-                                where todo.Checked == 1
+                                where todo.Checked == 1 && todo.FkUserId == user.Id
                                 select todo;
 
                         PrintFormattedToDo(query);    
@@ -110,6 +129,10 @@ namespace todo_console_app
                         catch (Exception ex) { PrintError(ex.Message); }
                     break;
 
+                    case ConsoleKey.D8:
+                        SignOut();
+                        break;
+                    
                     default:
                         Environment.Exit(-1);
                         break;
@@ -117,26 +140,96 @@ namespace todo_console_app
             } while (true);
         }
 
-        static void PrintError(string err)
+        static void SignOut()
         {
-            Console.WriteLine(err.Pastel("#FF0000"));
+            user = null;
+            Main();
         }
 
-        static void VisualizeAllContent(long idTodo)
+        static void SignIn()
         {
-            Todos db = new();
-            var todo = (from record in db.Db
-                        where record.ID == idTodo
-                        select record).First();
+            string username, password, email;
+            Console.WriteLine("Sing in".Pastel("#00fff0"));
 
-            Console.Write($"Content: `{todo.Content}`\n");
+            Console.Write("Insert username: ");
+            username = Console.ReadLine();
+
+            Console.Write("Insert password: ");
+            password = Console.ReadLine();
+
+            Console.Write("Insert email: ");
+            email = Console.ReadLine();
+
+            Todos db = new();
+            db.Users.Add(
+                new() {
+                    Username = username,
+                    Password = password,
+                    Email = email
+                }
+            );
+            db.SaveChanges();
+
+            Console.Clear();
+        }
+
+        static void Login()
+        {
+            string username, password;
+            Console.WriteLine("Log in".Pastel("#00fff0"));
+            
+            do 
+            {
+                Console.Write("Insert username: ");
+                username = Console.ReadLine();
+
+                Console.Write("Insert password: ");
+                password = Console.ReadLine();
+
+                Console.Clear();
+            } while (username == string.Empty && password == string.Empty);
+            
+            Todos db = new();
+            
+            var query = (from user in db.Users
+                        where user.Username == username && user.Password == password
+                        select user).ToList();
+
+            if (query.Count <= 0)
+                PrintError("User doesn't exist!".Pastel("#ff0000"));
+
+            user = query.First();
+            Console.Clear();
+        }
+
+        static void PrintError(string err)
+        {
+            Console.WriteLine(err.Pastel("#ff0000"));
+        }
+
+        static void VisualizeAllContent()
+        {
+            Console.Write("Enter the id for visualize all the content:");
+            long idTodo = 0;
+            try
+            {
+                idTodo = long.Parse(Console.ReadLine());
+                Todos db = new();
+                var todo = (from record in db.Db
+                            where record.Id == idTodo && record.FkUserId == user.Id
+                            select record).First();
+
+                Console.Write($"Content: `{todo.Content}`\n");
+
+            }
+            catch (Exception ex) { PrintError(ex.Message); return; }
         }
 
         static void RemoveTodo(long idTodo)
         {
             Todos db = new();
             var todo = (from record in db.Db
-                        where record.ID == idTodo
+                        where record.Id == idTodo && record.FkUserId == user.Id
                         select record).First();
 
             db.Db.Remove(todo);
@@ -147,7 +240,7 @@ namespace todo_console_app
         {
             Todos db = new();
             var todo = (from record in db.Db
-                       where record.ID == idTodo
+                       where record.Id == idTodo && record.FkUserId == user.Id
                        select record).First();
             
             if (todo.Checked == 0)
@@ -162,7 +255,7 @@ namespace todo_console_app
         {
             Todos db = new();
             Todo todo = (from record in db.Db
-                        where record.ID == idTodo
+                        where record.Id == idTodo && record.FkUserId == user.Id
                         select record).First();   
             todo.Content = content != "" ? content : todo.Content;
             todo.Title = title != "" ? title : todo.Title;
@@ -181,6 +274,7 @@ namespace todo_console_app
             menu.AppendLine("[5] - Check Todo");
             menu.AppendLine("[6] - Remove Todo");
             menu.AppendLine("[7] - Modify Todo");
+            menu.AppendLine("[8] - Sign out");
             Console.WriteLine(menu.ToString());
         }
 
@@ -203,7 +297,7 @@ namespace todo_console_app
             ConsoleResponsiveTable.PrintSepartorLine();
             ConsoleResponsiveTable.PrintRow("ID", "Title", "Content", "Checked");
             ConsoleResponsiveTable.PrintSepartorLine();
-            ConsoleResponsiveTable.PrintRow(todo.ID.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
+            ConsoleResponsiveTable.PrintRow(todo.Id.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
         }
 
         static void PrintFormattedToDo(IEnumerable<Todo> todos)
@@ -213,7 +307,7 @@ namespace todo_console_app
             foreach (Todo todo in todos)
             {
                 ConsoleResponsiveTable.PrintSepartorLine();
-                ConsoleResponsiveTable.PrintRow(todo.ID.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
+                ConsoleResponsiveTable.PrintRow(todo.Id.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
             }
             ConsoleResponsiveTable.PrintSepartorLine();
         }
