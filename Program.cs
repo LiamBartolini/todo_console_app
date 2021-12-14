@@ -1,7 +1,10 @@
 ﻿using Pastel;
 using System;
+using System.Net;
 using System.Text;
 using System.Linq;
+using System.Net.Mail;
+using System.Net.Mime;
 using System.Collections.Generic;
 using todo_console_app.Models;
 
@@ -9,7 +12,7 @@ namespace todo_console_app
 {
     class Program
     {
-        static User user = null;
+        static User currentUser = null;
 
         static void Main()
         {
@@ -33,7 +36,7 @@ namespace todo_console_app
                     break;
             }
 
-            if (user == null) 
+            if (currentUser == null) 
             {
                 PrintError("User not logged in!");
                 Environment.Exit(0);
@@ -66,14 +69,14 @@ namespace todo_console_app
                                 Title = strTitle,
                                 Content = strContent,
                                 CreationDate = $"{DateTime.Today:dd/MM}",
-                                FkUserId = user.Id
+                                FkUserId = currentUser.Id
                             }
                         );
                         break;
 
                     case ConsoleKey.D2:
                         query = from todo in db.Db
-                                where todo.Checked == 0 && todo.FkUserId == user.Id // if checked == 0 is like unchecked; otherwise (value == 1) is checked 
+                                where todo.Checked == 0 && todo.FkUserId == currentUser.Id // if checked == 0 is like unchecked; otherwise (value == 1) is checked 
                                 select todo; 
 
                         PrintFormattedToDo(query);
@@ -82,7 +85,7 @@ namespace todo_console_app
 
                     case ConsoleKey.D3:
                         query = (from todo in db.Db
-                                where todo.FkUserId == user.Id
+                                where todo.FkUserId == currentUser.Id
                                 select todo).ToList<Todo>(); 
 
                         PrintFormattedToDo(query);
@@ -91,7 +94,7 @@ namespace todo_console_app
 
                     case ConsoleKey.D4:
                         query = from todo in db.Db
-                                where todo.Checked == 1 && todo.FkUserId == user.Id
+                                where todo.Checked == 1 && todo.FkUserId == currentUser.Id
                                 select todo;
 
                         PrintFormattedToDo(query);    
@@ -133,6 +136,19 @@ namespace todo_console_app
                         SignOut();
                         break;
                     
+                    case ConsoleKey.R:
+                        Console.Write("Insert new password: ");
+                        string strNewPassword = Console.ReadLine();
+                        
+                        if (ResetPassword(strNewPassword)) {
+                            Console.WriteLine("Password changed!".Pastel("#00ff00"));
+                            Login();
+                        } else {
+                            PrintError("Passwords cannot be the same!");
+                            continue;
+                        }
+                        break;
+
                     default:
                         Environment.Exit(-1);
                         break;
@@ -140,9 +156,30 @@ namespace todo_console_app
             } while (true);
         }
 
+        static bool ResetPassword(string newPassword)
+        {
+            Todos db = new();
+            string oldPassword = (from user in db.Users
+                        where user.Id == currentUser.Id
+                        select user.Password).First();
+
+            if (newPassword != oldPassword) 
+            {
+                var query = (from user in db.Users
+                        where user.Id == currentUser.Id
+                        select user).First();
+
+                query.Password = newPassword;
+                db.SaveChanges();
+                return true;
+            }
+            else
+                return false;
+        }
+
         static void SignOut()
         {
-            user = null;
+            currentUser = null;
             Main();
         }
 
@@ -196,9 +233,12 @@ namespace todo_console_app
                         select user).ToList();
 
             if (query.Count <= 0)
+            {
                 PrintError("User doesn't exist!".Pastel("#ff0000"));
+                Main();
+            }
 
-            user = query.First();
+            currentUser = query.First();
             Console.Clear();
         }
 
@@ -216,7 +256,7 @@ namespace todo_console_app
                 idTodo = long.Parse(Console.ReadLine());
                 Todos db = new();
                 var todo = (from record in db.Db
-                            where record.Id == idTodo && record.FkUserId == user.Id
+                            where record.Id == idTodo && record.FkUserId == currentUser.Id
                             select record).First();
 
                 Console.Write($"Content: `{todo.Content}`\n");
@@ -229,7 +269,7 @@ namespace todo_console_app
         {
             Todos db = new();
             var todo = (from record in db.Db
-                        where record.Id == idTodo && record.FkUserId == user.Id
+                        where record.Id == idTodo && record.FkUserId == currentUser.Id
                         select record).First();
 
             db.Db.Remove(todo);
@@ -240,7 +280,7 @@ namespace todo_console_app
         {
             Todos db = new();
             var todo = (from record in db.Db
-                       where record.Id == idTodo && record.FkUserId == user.Id
+                       where record.Id == idTodo && record.FkUserId == currentUser.Id
                        select record).First();
             
             if (todo.Checked == 0)
@@ -255,7 +295,7 @@ namespace todo_console_app
         {
             Todos db = new();
             Todo todo = (from record in db.Db
-                        where record.Id == idTodo && record.FkUserId == user.Id
+                        where record.Id == idTodo && record.FkUserId == currentUser.Id
                         select record).First();   
             todo.Content = content != "" ? content : todo.Content;
             todo.Title = title != "" ? title : todo.Title;
@@ -275,6 +315,7 @@ namespace todo_console_app
             menu.AppendLine("[6] - Remove Todo");
             menu.AppendLine("[7] - Modify Todo");
             menu.AppendLine("[8] - Sign out");
+            menu.AppendLine("[r] - Reset account password");
             Console.WriteLine(menu.ToString());
         }
 
