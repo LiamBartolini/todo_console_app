@@ -7,6 +7,9 @@
 [Pp]ublish/
 Todos.db
 
+# todo reminder file
+.todo.txt
+
 # User-specific files
 *.rsuser
 *.suo
