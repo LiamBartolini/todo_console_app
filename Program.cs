@@ -1,10 +1,7 @@
 ﻿using Pastel;
 using System;
-using System.Net;
 using System.Text;
 using System.Linq;
-using System.Net.Mail;
-using System.Net.Mime;
 using System.Collections.Generic;
 using todo_console_app.Models;
 
@@ -12,6 +9,11 @@ namespace todo_console_app
 {
     class Program
     {
+        public enum Action {
+            ResetPassword,
+            SigIn,
+            LogIn
+        }
         static User currentUser = null;
 
         static void Main()
@@ -137,16 +139,7 @@ namespace todo_console_app
                         break;
                     
                     case ConsoleKey.R:
-                        Console.Write("Insert new password: ");
-                        string strNewPassword = Console.ReadLine();
-                        
-                        if (ResetPassword(strNewPassword)) {
-                            Console.WriteLine("Password changed!".Pastel("#00ff00"));
-                            Login();
-                        } else {
-                            PrintError("Passwords cannot be the same!");
-                            continue;
-                        }
+                        InsertPassword(Action.ResetPassword);
                         break;
 
                     default:
@@ -177,6 +170,43 @@ namespace todo_console_app
                 return false;
         }
 
+        // method that hide password while typing
+        static string InsertPassword(Action action) {
+            ConsoleKey pressed;
+            string strNewPassword = "";
+            
+            Console.Write("Insert password: ");
+            (int, int) initialPosition = Console.GetCursorPosition();
+            do {
+                pressed = Console.ReadKey(true).Key;
+                if (pressed != ConsoleKey.Enter) {
+                    strNewPassword += pressed.ToString().ToLower();
+                }
+
+                Console.SetCursorPosition(initialPosition.Item1,
+                    initialPosition.Item2);
+            } while(pressed != ConsoleKey.Enter);
+
+            switch(action) {
+                case Action.ResetPassword:
+                    if (ResetPassword(strNewPassword)) {
+                        Console.WriteLine("Password changed!".Pastel("#00ff00"));
+                        Login();
+                    } else {
+                        PrintError("Passwords cannot be the same!");
+                    }
+                break;
+
+                case Action.LogIn:
+                case Action.SigIn:
+                    return strNewPassword;
+
+                default:
+                    break;
+            }
+            return null;
+        }
+
         static void SignOut()
         {
             currentUser = null;
@@ -191,8 +221,7 @@ namespace todo_console_app
             Console.Write("Insert username: ");
             username = Console.ReadLine();
 
-            Console.Write("Insert password: ");
-            password = Console.ReadLine();
+            password = InsertPassword(Action.SigIn);
 
             Console.Write("Insert email: ");
             email = Console.ReadLine();
@@ -205,6 +234,7 @@ namespace todo_console_app
                     Email = email
                 }
             );
+
             db.SaveChanges();
 
             Console.Clear();
@@ -220,8 +250,7 @@ namespace todo_console_app
                 Console.Write("Insert username: ");
                 username = Console.ReadLine();
 
-                Console.Write("Insert password: ");
-                password = Console.ReadLine();
+                password = InsertPassword(Action.LogIn);
 
                 Console.Clear();
             } while (username == string.Empty && password == string.Empty);
