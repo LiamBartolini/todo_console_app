@@ -14,6 +14,7 @@ namespace todo_console_app
             SigIn,
             LogIn
         }
+
         static User currentUser = null;
 
         static void Main()
@@ -23,6 +24,7 @@ namespace todo_console_app
             Todos db = new();
             IEnumerable<Todo> query;
             string strId;
+            long gapValue;
 
             Console.WriteLine("Are you signed in? [y/n]");
             switch (Console.ReadKey(true).Key)
@@ -77,12 +79,12 @@ namespace todo_console_app
                         break;
 
                     case ConsoleKey.D2:
-                        query = from todo in db.Db
+                        query = (from todo in db.Db
                                 where todo.Checked == 0 && todo.FkUserId == currentUser.Id // if checked == 0 is like unchecked; otherwise (value == 1) is checked 
-                                select todo; 
+                                select todo).ToList<Todo>(); 
 
-                        PrintFormattedToDo(query);
-                        VisualizeAllContent();
+                        gapValue = PrintFormattedToDo(query as List<Todo>);
+                        VisualizeAllContent(gapValue: gapValue);
                         break;
 
                     case ConsoleKey.D3:
@@ -90,8 +92,8 @@ namespace todo_console_app
                                 where todo.FkUserId == currentUser.Id
                                 select todo).ToList<Todo>(); 
 
-                        PrintFormattedToDo(query);
-                        VisualizeAllContent();
+                        gapValue = PrintFormattedToDo(query as List<Todo>);
+                        VisualizeAllContent(gapValue: gapValue);
                         break;
 
                     case ConsoleKey.D4:
@@ -99,7 +101,7 @@ namespace todo_console_app
                                 where todo.Checked == 1 && todo.FkUserId == currentUser.Id
                                 select todo;
 
-                        PrintFormattedToDo(query);    
+                        PrintFormattedToDo(query as List<Todo>);
                         break;
 
                     case ConsoleKey.D5:
@@ -290,13 +292,13 @@ namespace todo_console_app
             Console.WriteLine(err.Pastel("#ff0000"));
         }
 
-        static void VisualizeAllContent()
+        static void VisualizeAllContent(long gapValue = 0)
         {
             Console.Write("Enter the id for visualize all the content:");
             long idTodo = 0;
             try
             {
-                idTodo = long.Parse(Console.ReadLine());
+                idTodo = long.Parse(Console.ReadLine()) + gapValue;
                 Todos db = new();
                 var todo = (from record in db.Db
                             where record.Id == idTodo && record.FkUserId == currentUser.Id
@@ -384,16 +386,19 @@ namespace todo_console_app
             ConsoleResponsiveTable.PrintRow(todo.Id.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
         }
 
-        static void PrintFormattedToDo(IEnumerable<Todo> todos)
+        static long PrintFormattedToDo(List<Todo> todos)
         {
             ConsoleResponsiveTable.PrintSepartorLine();
             ConsoleResponsiveTable.PrintRow("ID", "Title", "Content", "Checked");
             foreach (Todo todo in todos)
             {
                 ConsoleResponsiveTable.PrintSepartorLine();
-                ConsoleResponsiveTable.PrintRow(todo.Id.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
+                // ConsoleResponsiveTable.PrintRow(todo.Id.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
+                ConsoleResponsiveTable.PrintRow((todos.IndexOf(todo) + 1).ToString(), todo.Title, todo.Content, todo.Checked.ToString());
+
             }
             ConsoleResponsiveTable.PrintSepartorLine();
+            return todos.First().Id - 1;
         }
     }
 }
