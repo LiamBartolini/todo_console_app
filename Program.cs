@@ -217,16 +217,30 @@ namespace todo_console_app
         {
             string username, password, email;
             Console.WriteLine("Sing in".Pastel("#00fff0"));
-
-            Console.Write("Insert username: ");
-            username = Console.ReadLine();
-
-            password = InsertPassword(Action.SigIn);
-
-            Console.Write("Insert email: ");
-            email = Console.ReadLine();
-
             Todos db = new();
+
+            do
+            {
+                Console.Write("Insert username: ");
+                username = Console.ReadLine();
+
+                password = InsertPassword(Action.SigIn);
+
+                Console.Write("\nInsert email: ");
+                email = Console.ReadLine();
+
+                var query = (from user in db.Users
+                            where user.Username == username || user.Email == email
+                            select user).ToList<User>();
+
+                if (query.Count() > 0) {
+                    PrintError("Cannot exists more then one account with the same username/email");
+                } else {
+                    break;
+                }
+                
+            } while (true);
+
             db.Users.Add(
                 new() {
                     Username = username,
