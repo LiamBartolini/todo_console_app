@@ -410,15 +410,7 @@ namespace todo_console_app
             Console.SetCursorPosition(Console.WindowWidth / 2, cursorPosition.Item2);
             Console.WriteLine(title);
         }
-
-        static void PrintFormattedToDo(Todo todo)
-        {
-            ConsoleResponsiveTable.PrintSepartorLine();
-            ConsoleResponsiveTable.PrintRow("ID", "Title", "Content", "Checked");
-            ConsoleResponsiveTable.PrintSepartorLine();
-            ConsoleResponsiveTable.PrintRow(todo.Id.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
-        }
-
+        
         static long PrintFormattedToDo(List<Todo> todos)
         {
             ConsoleResponsiveTable.PrintSepartorLine();
