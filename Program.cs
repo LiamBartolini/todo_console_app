@@ -24,17 +24,19 @@ namespace todo_console_app
             Todos db = new();
             IEnumerable<Todo> query;
             string strId;
+            
+            // value from 1 and the unique ID in db of the todo
             long gapValue;
 
             Console.WriteLine("Are you signed in? [y/n]");
             switch (Console.ReadKey(true).Key)
             {
                 case ConsoleKey.Y:
+                default:
                     Login();
                     break;
 
                 case ConsoleKey.N:
-                default:
                     SignIn();
                     Login();
                     break;
@@ -92,7 +94,7 @@ namespace todo_console_app
                                 where todo.FkUserId == currentUser.Id
                                 select todo).ToList<Todo>(); 
 
-                        gapValue = PrintFormattedToDo(query as List<Todo>);
+                        gapValue = PrintFormattedToDo(query.ToList<Todo>());
                         VisualizeAllContent(gapValue: gapValue);
                         break;
 
@@ -101,14 +103,20 @@ namespace todo_console_app
                                 where todo.Checked == 1 && todo.FkUserId == currentUser.Id
                                 select todo;
 
-                        PrintFormattedToDo(query as List<Todo>);
+                        PrintFormattedToDo(query.ToList<Todo>());
                         break;
 
                     case ConsoleKey.D5:
+                        query = from todo in db.Db
+                                where todo.FkUserId == currentUser.Id
+                                select todo;
+
+                        gapValue = PrintFormattedToDo(query.ToList<Todo>());
+                        
                         Console.Write("Insert ID: ");
                         strId = Console.ReadLine();
                         
-                        try { CheckTodo(long.Parse(strId)); }
+                        try { CheckTodo(long.Parse(strId) + gapValue); }
                         catch (Exception ex) { PrintError(ex.Message); }
                         
                         break;
@@ -172,22 +180,47 @@ namespace todo_console_app
                 return false;
         }
 
-        // method that hide password while typing
+        // method for insert password
         static string InsertPassword(Action action) {
             ConsoleKey pressed;
             string strNewPassword = "";
             
+            // hide the password while typing it
             Console.Write("Insert password: ");
             (int, int) initialPosition = Console.GetCursorPosition();
             do {
                 pressed = Console.ReadKey(true).Key;
-                if (pressed != ConsoleKey.Enter) {
-                    strNewPassword += pressed.ToString().ToLower();
+
+                // check for number
+                if (((int)pressed) >= 48 && ((int)pressed) <= 57) {
+                    strNewPassword += ((int)pressed) - 48;
+                    Console.WriteLine(strNewPassword);
+                    continue;
                 }
 
-                Console.SetCursorPosition(initialPosition.Item1,
-                    initialPosition.Item2);
-            } while(pressed != ConsoleKey.Enter);
+                if (pressed == ConsoleKey.Backspace) {
+                    if (strNewPassword.Length - 1 >= 0) {
+                        strNewPassword = strNewPassword.Remove(strNewPassword.Length - 1);
+                    }
+                    continue;
+                }
+                
+                if (pressed == ConsoleKey.Escape) {
+                    strNewPassword = "";
+                    continue;
+                }
+
+                if (pressed != ConsoleKey.Enter && pressed != ConsoleKey.Escape) {
+                    if (Console.CapsLock) {
+                        strNewPassword += pressed.ToString().ToUpper();
+                    } else {
+                        strNewPassword += pressed.ToString().ToLower();
+                    }
+                }
+
+                Console.WriteLine(strNewPassword);
+                Console.SetCursorPosition(initialPosition.Item1, initialPosition.Item2);
+            } while(pressed != ConsoleKey.Enter || strNewPassword.Length <= 8);
 
             switch(action) {
                 case Action.ResetPassword:
@@ -393,9 +426,7 @@ namespace todo_console_app
             foreach (Todo todo in todos)
             {
                 ConsoleResponsiveTable.PrintSepartorLine();
-                // ConsoleResponsiveTable.PrintRow(todo.Id.ToString(), todo.Title, todo.Content, todo.Checked.ToString());
                 ConsoleResponsiveTable.PrintRow((todos.IndexOf(todo) + 1).ToString(), todo.Title, todo.Content, todo.Checked.ToString());
-
             }
             ConsoleResponsiveTable.PrintSepartorLine();
             return todos.First().Id - 1;
